@@ -19,22 +19,6 @@
 package org.apache.skywalking.apm.agent.core.kafka;
 
 import com.google.gson.Gson;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import org.apache.kafka.clients.admin.AdminClient;
-import org.apache.kafka.clients.admin.DescribeTopicsResult;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.BytesSerializer;
@@ -51,6 +35,11 @@ import org.apache.skywalking.apm.agent.core.plugin.loader.AgentClassLoader;
 import org.apache.skywalking.apm.agent.core.remote.GRPCChannelManager;
 import org.apache.skywalking.apm.util.RunnableWithExceptionProtection;
 import org.apache.skywalking.apm.util.StringUtil;
+
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Configuring, initializing and holding a KafkaProducer instance for reporters.
@@ -112,39 +101,15 @@ public class KafkaProducerManager implements BootService, Runnable {
         }
         Kafka.PRODUCER_CONFIG.forEach(properties::setProperty);
 
-        try (AdminClient adminClient = AdminClient.create(properties)) {
-            DescribeTopicsResult topicsResult = adminClient.describeTopics(topics);
-            Set<String> topics = topicsResult.values().entrySet().stream()
-                    .map(entry -> {
-                        try {
-                            entry.getValue().get(
-                                    Kafka.GET_TOPIC_TIMEOUT,
-                                    TimeUnit.SECONDS
-                            );
-                            return null;
-                        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-                            LOGGER.error(e, "Get KAFKA topic:{} error.", entry.getKey());
-                        }
-                        return entry.getKey();
-                    })
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toSet());
-    
-            if (!topics.isEmpty()) {
-                LOGGER.warn("kafka topics {} is not exist, connect to kafka cluster abort", topics);
-                return;
-            }
-    
-            try {
-                producer = new KafkaProducer<>(properties, new StringSerializer(), new BytesSerializer());
-            } catch (Exception e) {
-                LOGGER.error(e, "connect to kafka cluster '{}' failed", Kafka.BOOTSTRAP_SERVERS);
-                return;
-            }
-            //notify listeners to send data if no exception been throw
-            notifyListeners(KafkaConnectionStatus.CONNECTED);
-            bootProducerFuture.cancel(true);
+        try {
+            producer = new KafkaProducer<>(properties, new StringSerializer(), new BytesSerializer());
+        } catch (Exception e) {
+            LOGGER.error(e, "connect to kafka cluster '{}' failed", Kafka.BOOTSTRAP_SERVERS);
+            return;
         }
+        //notify listeners to send data if no exception been throw
+        notifyListeners(KafkaConnectionStatus.CONNECTED);
+        bootProducerFuture.cancel(true);
     }
 
     private void notifyListeners(KafkaConnectionStatus status) {

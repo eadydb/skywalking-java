@@ -58,11 +58,6 @@ public class KafkaReporterPluginConfig {
              * <code>plugin.kafka.producer_config_json = {"batch.size":32768}</code>
              */
             public static String PRODUCER_CONFIG_JSON = "";
-
-            /**
-             * Timeout period of reading topics from the Kafka server, the unit is second.
-             */
-            public static int GET_TOPIC_TIMEOUT = 10;
         }
     }
 }

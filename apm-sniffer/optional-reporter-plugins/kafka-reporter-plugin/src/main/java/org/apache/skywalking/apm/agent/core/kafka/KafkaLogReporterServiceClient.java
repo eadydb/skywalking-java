@@ -56,7 +56,8 @@ public class KafkaLogReporterServiceClient extends LogReportServiceClient implem
             // Kafka Log reporter sends one log per time.
             // Every time, service name should be set to keep data integrity.
             data.setService(Config.Agent.SERVICE_NAME);
-            producer.send(new ProducerRecord<>(topic, data.getService(), Bytes.wrap(data.build().toByteArray())));
+            data.setServiceInstance(Config.Agent.INSTANCE_NAME);
+            producer.send(new ProducerRecord<>(topic, data.getServiceInstance(), Bytes.wrap(data.build().toByteArray())));
         }
     }
 

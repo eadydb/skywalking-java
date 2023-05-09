@@ -25,6 +25,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.utils.Bytes;
 import org.apache.skywalking.apm.agent.core.boot.OverrideImplementor;
 import org.apache.skywalking.apm.agent.core.boot.ServiceManager;
+import org.apache.skywalking.apm.agent.core.conf.Config;
 import org.apache.skywalking.apm.agent.core.logging.api.ILog;
 import org.apache.skywalking.apm.agent.core.logging.api.LogManager;
 import org.apache.skywalking.apm.agent.core.profile.ProfileSnapshotSender;
@@ -68,7 +69,7 @@ public class KafkaProfileSnapshotSender extends ProfileSnapshotSender implements
 
             producer.send(new ProducerRecord<>(
                 topic,
-                object.getTaskId() + object.getSequence(),
+                    Config.Agent.INSTANCE_NAME,
                 Bytes.wrap(object.toByteArray())
             ));
         }
