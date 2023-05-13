@@ -100,7 +100,7 @@ public class KafkaProducerManager implements BootService, Runnable {
             config.forEach(properties::setProperty);
         }
         Kafka.PRODUCER_CONFIG.forEach(properties::setProperty);
-
+        // remove kafka topic info check, owner create topic
         try {
             producer = new KafkaProducer<>(properties, new StringSerializer(), new BytesSerializer());
         } catch (Exception e) {

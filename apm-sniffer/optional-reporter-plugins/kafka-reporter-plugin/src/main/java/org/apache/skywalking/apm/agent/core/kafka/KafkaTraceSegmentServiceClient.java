@@ -90,6 +90,9 @@ public class KafkaTraceSegmentServiceClient implements BootService, IConsumer<Tr
         }
         data.forEach(traceSegment -> {
             SegmentObject upstreamSegment = traceSegment.transform();
+            if (LOGGER.isDebugEnable()) {
+                LOGGER.debug("trace segments size {}.", upstreamSegment.toByteArray().length);
+            }
             ProducerRecord<String, Bytes> record = new ProducerRecord<>(
                 topic,
                     Config.Agent.INSTANCE_NAME,

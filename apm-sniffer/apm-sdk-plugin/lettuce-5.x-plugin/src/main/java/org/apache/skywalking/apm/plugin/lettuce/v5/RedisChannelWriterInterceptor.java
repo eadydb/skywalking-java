@@ -103,6 +103,9 @@ public class RedisChannelWriterInterceptor implements InstanceMethodsAroundInter
             return Constants.EMPTY_STRING;
         } 
         ByteBuffer firstEncodedKey = args.getFirstEncodedKey();
+        if (firstEncodedKey == null) {
+            return Constants.EMPTY_STRING;
+        }
         String key = STRING_CODEC.decodeKey(firstEncodedKey);    
         if (StringUtil.isNotEmpty(key) && key.length() > LettucePluginConfig.Plugin.Lettuce.REDIS_PARAMETER_MAX_LENGTH) {
             key = StringUtil.cut(key, LettucePluginConfig.Plugin.Lettuce.REDIS_PARAMETER_MAX_LENGTH) + ABBR;
