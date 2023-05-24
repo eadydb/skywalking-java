@@ -43,32 +43,34 @@ public class PreparedStatementExecuteMethodsInterceptor implements InstanceMetho
     public final void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments,
                                    Class<?>[] argumentsTypes, MethodInterceptResult result) {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        ConnectionInfo connectInfo = cacheObject.getConnectionInfo();
-        AbstractSpan span = ContextManager.createExitSpan(
-            buildOperationName(connectInfo, method.getName(), cacheObject.getStatementName()), connectInfo
-                .getDatabasePeer());
-        Tags.DB_TYPE.set(span, connectInfo.getDBType());
-        Tags.DB_INSTANCE.set(span, connectInfo.getDatabaseName());
-        Tags.DB_STATEMENT.set(span, SqlBodyUtil.limitSqlBodySize(cacheObject.getSql()));
-        span.setComponent(connectInfo.getComponent());
+        if (cacheObject != null) {
+            ConnectionInfo connectInfo = cacheObject.getConnectionInfo();
+            AbstractSpan span = ContextManager.createExitSpan(
+                    buildOperationName(connectInfo, method.getName(), cacheObject.getStatementName()), connectInfo
+                            .getDatabasePeer());
+            Tags.DB_TYPE.set(span, connectInfo.getDBType());
+            Tags.DB_INSTANCE.set(span, connectInfo.getDatabaseName());
+            Tags.DB_STATEMENT.set(span, SqlBodyUtil.limitSqlBodySize(cacheObject.getSql()));
+            span.setComponent(connectInfo.getComponent());
 
-        if (JDBCPluginConfig.Plugin.JDBC.TRACE_SQL_PARAMETERS) {
-            final Object[] parameters = cacheObject.getParameters();
-            if (parameters != null && parameters.length > 0) {
-                int maxIndex = cacheObject.getMaxIndex();
-                String parameterString = getParameterString(parameters, maxIndex);
-                Tags.SQL_PARAMETERS.set(span, parameterString);
+            if (JDBCPluginConfig.Plugin.JDBC.TRACE_SQL_PARAMETERS) {
+                final Object[] parameters = cacheObject.getParameters();
+                if (parameters != null && parameters.length > 0) {
+                    int maxIndex = cacheObject.getMaxIndex();
+                    String parameterString = getParameterString(parameters, maxIndex);
+                    Tags.SQL_PARAMETERS.set(span, parameterString);
+                }
             }
-        }
 
-        SpanLayer.asDB(span);
+            SpanLayer.asDB(span);
+        }
     }
 
     @Override
     public final Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments,
                                     Class<?>[] argumentsTypes, Object ret) {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        if (cacheObject.getConnectionInfo() != null) {
+        if (cacheObject != null && cacheObject.getConnectionInfo() != null) {
             ContextManager.stopSpan();
         }
         return ret;
@@ -78,7 +80,7 @@ public class PreparedStatementExecuteMethodsInterceptor implements InstanceMetho
     public final void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
                                             Class<?>[] argumentsTypes, Throwable t) {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        if (cacheObject.getConnectionInfo() != null) {
+        if (cacheObject != null && cacheObject.getConnectionInfo() != null) {
             ContextManager.activeSpan().log(t);
         }
     }

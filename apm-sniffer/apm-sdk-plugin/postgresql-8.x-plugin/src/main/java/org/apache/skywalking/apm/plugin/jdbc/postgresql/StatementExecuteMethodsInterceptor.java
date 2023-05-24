@@ -38,24 +38,26 @@ public class StatementExecuteMethodsInterceptor implements InstanceMethodsAround
     public final void beforeMethod(EnhancedInstance objInst, Method method, Object[] allArguments,
         Class<?>[] argumentsTypes, MethodInterceptResult result) throws Throwable {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        ConnectionInfo connectInfo = cacheObject.getConnectionInfo();
-        AbstractSpan span = ContextManager.createExitSpan(buildOperationName(connectInfo, method.getName(), cacheObject.getStatementName()), connectInfo
-            .getDatabasePeer());
-        Tags.DB_TYPE.set(span, connectInfo.getDBType());
-        Tags.DB_INSTANCE.set(span, connectInfo.getDatabaseName());
-        String sql = (String) allArguments[0];
-        sql = SqlBodyUtil.limitSqlBodySize(sql);
-        Tags.DB_STATEMENT.set(span, sql);
-        span.setComponent(connectInfo.getComponent());
+        if (cacheObject != null) {
+            ConnectionInfo connectInfo = cacheObject.getConnectionInfo();
+            AbstractSpan span = ContextManager.createExitSpan(buildOperationName(connectInfo, method.getName(), cacheObject.getStatementName()), connectInfo
+                    .getDatabasePeer());
+            Tags.DB_TYPE.set(span, connectInfo.getDBType());
+            Tags.DB_INSTANCE.set(span, connectInfo.getDatabaseName());
+            String sql = (String) allArguments[0];
+            sql = SqlBodyUtil.limitSqlBodySize(sql);
+            Tags.DB_STATEMENT.set(span, sql);
+            span.setComponent(connectInfo.getComponent());
 
-        SpanLayer.asDB(span);
+            SpanLayer.asDB(span);
+        }
     }
 
     @Override
     public final Object afterMethod(EnhancedInstance objInst, Method method, Object[] allArguments,
         Class<?>[] argumentsTypes, Object ret) throws Throwable {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        if (cacheObject.getConnectionInfo() != null) {
+        if (cacheObject != null && cacheObject.getConnectionInfo() != null) {
             ContextManager.stopSpan();
         }
         return ret;
@@ -65,7 +67,7 @@ public class StatementExecuteMethodsInterceptor implements InstanceMethodsAround
     public final void handleMethodException(EnhancedInstance objInst, Method method, Object[] allArguments,
         Class<?>[] argumentsTypes, Throwable t) {
         StatementEnhanceInfos cacheObject = (StatementEnhanceInfos) objInst.getSkyWalkingDynamicField();
-        if (cacheObject.getConnectionInfo() != null) {
+        if (cacheObject != null && cacheObject.getConnectionInfo() != null) {
             ContextManager.activeSpan().log(t);
         }
     }
